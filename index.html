@@ -33,13 +33,14 @@ height:100%;
 background-size:cover;
 filter:blur(20px);
 transition:1.5s;
+z-index:1;
 }
 
 .piece{
 position:absolute;
 background-repeat:no-repeat;
 touch-action:none;
-cursor:pointer;
+z-index:2;
 }
 
 button{
@@ -48,6 +49,7 @@ padding:12px 20px;
 font-size:18px;
 border:none;
 border-radius:10px;
+cursor:pointer;
 }
 
 </style>
@@ -56,7 +58,7 @@ border-radius:10px;
 <body>
 
 <h3>Blur Puzzle</h3>
-<button onclick="startGame()">Новая игра</button>
+<button id="newGameBtn">Новая игра</button>
 
 <div id="game">
 <div id="imageLayer"></div>
@@ -64,22 +66,24 @@ border-radius:10px;
 
 <script>
 
-// авто список картинок 1..10
-const images = [];
+const images=[];
 for(let i=1;i<=10;i++){
  images.push("images/"+i+".jpg");
 }
 
-const grid = 3;
+const grid=3;
 
 let pieces=[];
 let active=null;
+
+document.getElementById("newGameBtn").onclick=startGame;
 
 function startGame(){
 
 const game=document.getElementById("game");
 
-game.innerHTML='<div id="imageLayer"></div>';
+// удаляем старые пазлы
+document.querySelectorAll(".piece").forEach(e=>e.remove());
 
 const imgSrc=images[Math.floor(Math.random()*images.length)];
 
@@ -93,6 +97,7 @@ const pieceSize=size/grid;
 
 const imageLayer=document.getElementById("imageLayer");
 imageLayer.style.backgroundImage=`url(${imgSrc})`;
+imageLayer.style.filter="blur(20px)";
 
 pieces=[];
 
@@ -117,7 +122,6 @@ const correctY=y*pieceSize;
 div.dataset.correctX=correctX;
 div.dataset.correctY=correctY;
 
-// случайная позиция
 div.style.left=Math.random()*(size-pieceSize)+"px";
 div.style.top=Math.random()*(size-pieceSize)+"px";
 
@@ -190,13 +194,14 @@ for(let p of pieces){
  if(p.style.pointerEvents!=="none") return;
 }
 
-// разблюривание
+// плавное разблюривание
 document.getElementById("imageLayer").style.filter="blur(0px)";
 
 setTimeout(()=>alert("Пазл собран!"),400);
 
 }
 
+// старт сразу
 startGame();
 
 </script>
