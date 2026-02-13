@@ -2,19 +2,220 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Puzzle</title>
-<link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Puzzle Game</title>
+
+<style>
+
+body{
+margin:0;
+background:#111;
+font-family:Arial;
+display:flex;
+flex-direction:column;
+align-items:center;
+color:white;
+}
+
+#game{
+position:relative;
+width:95vw;
+max-width:500px;
+aspect-ratio:1/1;
+margin-top:10px;
+border-radius:12px;
+overflow:hidden;
+}
+
+.piece{
+position:absolute;
+background-size:100% 100%;
+touch-action:none;
+}
+
+#blurLayer{
+position:absolute;
+width:100%;
+height:100%;
+backdrop-filter:blur(20px);
+transition:1.5s;
+pointer-events:none;
+}
+
+button{
+margin:10px;
+padding:12px 20px;
+font-size:18px;
+border:none;
+border-radius:10px;
+}
+
+</style>
 </head>
 
 <body>
 
-<div id="app">
-  <div id="levelLabel"></div>
-  <div id="board"></div>
+<h2>Blur Puzzle</h2>
+<button onclick="startGame()">Новая игра</button>
+
+<div id="game">
+<div id="blurLayer"></div>
 </div>
 
-<script src="game.js"></script>
+<script>
+
+const images = [
+"images/1.jpg",
+"images/2.jpg",
+"images/3.jpg"
+]; // список файлов в папке
+
+const grid = 3; // 3x3 пазл
+
+let pieces=[];
+let correctPositions=[];
+let active=null;
+
+function startGame(){
+
+const game=document.getElementById("game");
+game.innerHTML='<div id="blurLayer"></div>';
+
+const img=new Image();
+
+img.src=images[Math.floor(Math.random()*images.length)];
+
+img.onload=()=>{
+
+const size=game.clientWidth;
+const pieceSize=size/grid;
+
+pieces=[];
+correctPositions=[];
+
+for(let y=0;y<grid;y++){
+for(let x=0;x<grid;x++){
+
+let div=document.createElement("div");
+
+div.className="piece";
+
+div.style.width=pieceSize+"px";
+div.style.height=pieceSize+"px";
+
+div.style.backgroundImage=`url(${img.src})`;
+div.style.backgroundPosition=`-${x*pieceSize}px -${y*pieceSize}px`;
+
+let correctX=x*pieceSize;
+let correctY=y*pieceSize;
+
+correctPositions.push({
+x:correctX,
+y:correctY
+});
+
+div.dataset.correctX=correctX;
+div.dataset.correctY=correctY;
+
+div.style.left=Math.random()*(size-pieceSize)+"px";
+div.style.top=Math.random()*(size-pieceSize)+"px";
+
+enableDrag(div);
+
+game.appendChild(div);
+
+pieces.push(div);
+
+}
+}
+
+}
+
+}
+
+function enableDrag(el){
+
+let offsetX,offsetY;
+
+el.addEventListener("pointerdown",(e)=>{
+active=el;
+offsetX=e.offsetX;
+offsetY=e.offsetY;
+el.setPointerCapture(e.pointerId);
+});
+
+el.addEventListener("pointermove",(e)=>{
+
+if(active!==el) return;
+
+const rect=document.getElementById("game").getBoundingClientRect();
+
+el.style.left=(e.clientX-rect.left-offsetX)+"px";
+el.style.top=(e.clientY-rect.top-offsetY)+"px";
+
+});
+
+el.addEventListener("pointerup",()=>{
+
+active=null;
+
+checkSnap(el);
+
+checkWin();
+
+});
+
+}
+
+function checkSnap(el){
+
+const snap=20;
+
+let cx=parseFloat(el.dataset.correctX);
+let cy=parseFloat(el.dataset.correctY);
+
+let x=parseFloat(el.style.left);
+let y=parseFloat(el.style.top);
+
+if(Math.abs(x-cx)<snap && Math.abs(y-cy)<snap){
+
+el.style.left=cx+"px";
+el.style.top=cy+"px";
+
+el.style.pointerEvents="none";
+
+}
+
+}
+
+function checkWin(){
+
+let done=true;
+
+for(let p of pieces){
+
+if(p.style.pointerEvents!=="none"){
+done=false;
+break;
+}
+
+}
+
+if(done){
+
+document.getElementById("blurLayer").style.backdropFilter="blur(0px)";
+
+setTimeout(()=>{
+alert("Пазл собран!");
+},500);
+
+}
+
+}
+
+startGame();
+
+</script>
 
 </body>
 </html>
