@@ -1,112 +1,135 @@
 const board = document.getElementById("board");
-const levelText = document.getElementById("levelText");
+const label = document.getElementById("levelLabel");
 
-let level = 1;
-const maxLevel = 10;
+const GRID = 3;
+const MAX_LEVEL = 10;
 
-const gridSize = 3; // 3x3 пазл
+let level = Number(localStorage.getItem("puzzleLevel")) || 1;
+
 let tiles = [];
+let dragTile = null;
+
+function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+        let j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+}
 
 function loadLevel(){
 
-    board.innerHTML = "";
-    tiles = [];
+    board.innerHTML="";
+    tiles=[];
 
-    levelText.innerText = "Level " + level;
+    label.textContent="Level "+level;
 
-    const image = `images/level${level}.jpg`;
+    const img=`images/${level}.jpg`;
 
-    let positions = [];
+    let order=[...Array(GRID*GRID).keys()];
+    shuffle(order);
 
-    for(let i=0;i<gridSize*gridSize;i++){
-        positions.push(i);
+    const size = board.offsetWidth / GRID;
+
+    for(let i=0;i<GRID*GRID;i++){
+
+        const div=document.createElement("div");
+
+        div.className="tile blur";
+        div.dataset.correct=i;
+        div.dataset.current=order[i];
+
+        const cx=order[i]%GRID;
+        const cy=Math.floor(order[i]/GRID);
+
+        div.style.width=size+"px";
+        div.style.height=size+"px";
+
+        div.style.backgroundImage=`url(${img})`;
+        div.style.backgroundSize=`${GRID*100}% ${GRID*100}%`;
+
+        div.style.backgroundPosition=
+            `${(cx/(GRID-1))*100}% ${(cy/(GRID-1))*100}%`;
+
+        setPosition(div,i,size);
+
+        enableTouch(div);
+
+        board.appendChild(div);
+        tiles.push(div);
     }
-
-    // перемешиваем
-    positions.sort(()=>Math.random()-0.5);
-
-    positions.forEach((pos,index)=>{
-
-        const tile = document.createElement("div");
-        tile.className="tile blur";
-
-        tile.dataset.correct = index;
-        tile.dataset.current = pos;
-
-        tile.style.backgroundImage = `url(${image})`;
-
-        const x = pos % gridSize;
-        const y = Math.floor(pos / gridSize);
-
-        tile.style.backgroundPosition =
-            `${(x/(gridSize-1))*100}% ${(y/(gridSize-1))*100}%`;
-
-        enableDrag(tile);
-
-        board.appendChild(tile);
-        tiles.push(tile);
-    });
-
 }
 
-let dragSrc = null;
+function setPosition(tile,index,size){
 
-function enableDrag(tile){
+    const x=index%GRID;
+    const y=Math.floor(index/GRID);
 
-    tile.addEventListener("pointerdown",()=>{
-        dragSrc = tile;
+    tile.style.transform=`translate(${x*size}px,${y*size}px)`;
+}
+
+function enableTouch(tile){
+
+    tile.addEventListener("pointerdown",e=>{
+        dragTile=tile;
     });
 
-    tile.addEventListener("pointerup",()=>{
+    tile.addEventListener("pointerup",e=>{
 
-        if(dragSrc && dragSrc !== tile){
+        if(!dragTile || dragTile===tile) return;
 
-            swapTiles(dragSrc,tile);
-            checkWin();
-        }
-
-        dragSrc=null;
+        swap(dragTile,tile);
+        dragTile=null;
+        checkWin();
     });
 }
 
-function swapTiles(a,b){
+function swap(a,b){
 
-    let temp = a.style.backgroundPosition;
-    a.style.backgroundPosition = b.style.backgroundPosition;
-    b.style.backgroundPosition = temp;
+    let temp=a.dataset.current;
+    a.dataset.current=b.dataset.current;
+    b.dataset.current=temp;
 
-    let tempData = a.dataset.current;
-    a.dataset.current = b.dataset.current;
-    b.dataset.current = tempData;
+    updatePositions();
+}
+
+function updatePositions(){
+
+    const size = board.offsetWidth / GRID;
+
+    tiles.forEach(t=>{
+        setPosition(t,Number(t.dataset.current),size);
+    });
 }
 
 function checkWin(){
 
-    let win = true;
+    let win=true;
 
-    tiles.forEach(tile=>{
-        if(tile.dataset.correct !== tile.dataset.current){
+    tiles.forEach(t=>{
+        if(t.dataset.correct!==t.dataset.current){
             win=false;
         }
     });
 
     if(win){
 
-        // убрать blur
         tiles.forEach(t=>t.classList.remove("blur"));
 
         setTimeout(()=>{
 
             level++;
-
-            if(level<=maxLevel){
-                loadLevel();
-            }else{
-                alert("Game Complete!");
+            if(level>MAX_LEVEL){
+                alert("Игра пройдена!");
+                level=1;
             }
 
-        },1500);
+            localStorage.setItem("puzzleLevel",level);
+            loadLevel();
+
+        },1200);
     }
 }
+
+window.addEventListener("resize",()=>updatePositions());
 
 loadLevel();
