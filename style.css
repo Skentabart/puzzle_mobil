@@ -1,25 +1,38 @@
 body{
     margin:0;
-    font-family:Arial;
-    background:#111;
+    background:#0f0f0f;
     color:white;
+    font-family:sans-serif;
+    display:flex;
+    justify-content:center;
+}
+
+#app{
+    width:100%;
+    max-width:500px;
+}
+
+.top{
+    padding:12px;
     text-align:center;
+    font-size:20px;
 }
 
 #board{
-    width:90vw;
-    height:90vw;
+    width:100vw;
+    max-width:500px;
+    aspect-ratio:1;
     margin:auto;
-    display:grid;
-    grid-template-columns: repeat(3,1fr);
-    gap:2px;
+    position:relative;
 }
 
 .tile{
-    background-size:300% 300%;
-    touch-action:none;
+    position:absolute;
+    background-size:100% 100%;
+    border-radius:6px;
+    transition:transform 0.25s;
 }
 
 .blur{
-    filter: blur(6px);
+    filter:blur(8px);
 }
