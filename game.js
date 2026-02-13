@@ -11,7 +11,7 @@ let dragTile = null;
 async function init(){
 
     // загружаем список изображений
-    const res = await fetch("images/list.json");
+    const res = await fetch("Images/list.json");
     images = await res.json();
 
     loadLevel();
