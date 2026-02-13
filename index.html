@@ -1,262 +1,399 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Пазл-игра</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puzzle Game</title>
   <style>
-    body {
+    * {
       margin: 0;
-      background: #222;
-      color: #fff;
-      font-family: Arial, sans-serif;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       min-height: 100vh;
+      padding: 20px;
     }
-    
-    h2 { 
-      margin: 20px 0 0 0; 
+
+    h1 {
+      color: white;
+      margin-bottom: 24px;
+      font-size: 36px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
-    
-    #game {
-      position: relative;
-      width: 95vw;
-      max-width: 500px;
-      aspect-ratio: 1/1;
-      margin-top: 16px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #333;
-      box-shadow: 0 4px 12px #0004;
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+      align-items: center;
+      justify-content: center;
     }
-    
-    #imageLayer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      background-position: center;
-      filter: blur(18px);
-      z-index: 1;
-      transition: filter 1.2s ease-out;
+
+    label {
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
     }
-    
-    .piece {
-      position: absolute;
-      background-size: 100% 100%;
-      background-repeat: no-repeat;
+
+    button, select, input[type="file"] {
+      padding: 10px 16px;
       border-radius: 6px;
-      box-shadow: 0 0 6px #0008;
-      cursor: grab;
-      z-index: 2;
-      user-select: none;
+      font-size: 14px;
+      border: none;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: all 0.2s;
+      background: white;
+      color: #333;
+      cursor: pointer;
+    }
+
+    button:hover, select:hover {
+      background: #e8e8e8;
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    select {
+      min-width: 100px;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 20px;
+      padding-right: 32px;
+    }
+
+    #puzzle-container {
+      position: relative;
+      width: 90vw;
+      max-width: 500px;
+      aspect-ratio: 1 / 1;
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      margin-bottom: 20px;
       touch-action: none;
     }
-    
-    .piece:active {
+
+    .puzzle-piece {
+      position: absolute;
+      background-repeat: no-repeat;
+      background-size: cover;
+      border: 1px solid rgba(0,0,0,0.1);
+      user-select: none;
+      cursor: grab;
+      transition: box-shadow 0.1s;
+    }
+
+    .puzzle-piece:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .puzzle-piece.dragging {
       cursor: grabbing;
-      z-index: 10;
+      opacity: 0.85;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+      z-index: 100 !important;
     }
-    
-    button {
+
+    #status {
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      min-height: 30px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    #error-message {
+      color: #ffcccc;
+      font-size: 14px;
+      text-align: center;
       margin-top: 10px;
-      margin-bottom: 20px;
-      padding: 12px 24px;
-      font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      background: #2962ff;
-      color: #fff;
-      cursor: pointer;
-      box-shadow: 0 2px 8px #0002;
-      transition: background 0.2s;
-    }
-    
-    button:hover {
-      background: #0039cb;
-    }
-    
-    button:active {
-      transform: scale(0.98);
     }
   </style>
 </head>
 <body>
-  <h2>🧩 Пазл-игра</h2>
-  <button id="newGameBtn">Новая игра</button>
+  <h1>🧩 Puzzle Game</h1>
   
-  <div id="game">
-    <div id="imageLayer"></div>
+  <div class="controls">
+    <label for="level">Level:</label>
+    <select id="level">
+      <option value="1">Image 1</option>
+      <option value="2">Image 2</option>
+      <option value="3">Image 3</option>
+      <option value="4">Image 4</option>
+      <option value="5">Image 5</option>
+      <option value="6">Image 6</option>
+      <option value="7">Image 7</option>
+      <option value="8">Image 8</option>
+      <option value="9">Image 9</option>
+      <option value="10">Image 10</option>
+    </select>
+
+    <label for="size">Grid Size:</label>
+    <select id="size">
+      <option value="2">2 x 2</option>
+      <option value="3" selected>3 x 3</option>
+      <option value="4">4 x 4</option>
+      <option value="5">5 x 5</option>
+    </select>
+
+    <button id="shuffle">Shuffle</button>
+    <button id="newGame">New Game</button>
+
+    <span style="color: white; font-weight: bold;">or</span>
+
+    <input type="file" id="imageUpload" accept="image/*" title="Upload custom image">
   </div>
 
-  <script>
-    // ===== НАСТРОЙКИ =====
-    const GRID_SIZE = 3;              // 3x3 = 9 частей
-    const SNAP_DISTANCE = 28;         // расстояние для прилипания
-    const IMAGES_FOLDER = 'images/';  // папка с картинками
-    const NUM_IMAGES = 10;            // количество картинок (1.jpg - 10.jpg)
+  <div id="puzzle-container"></div>
+  <div id="status"></div>
+  <div id="error-message"></div>
 
-    // ===== ПЕРЕМЕННЫЕ ИГРЫ =====
+  <script>
+    const container = document.getElementById("puzzle-container");
+    const levelSelector = document.getElementById("level");
+    const sizeSelector = document.getElementById("size");
+    const imageInput = document.getElementById("imageUpload");
+    const shuffleButton = document.getElementById("shuffle");
+    const newGameButton = document.getElementById("newGame");
+    const statusDiv = document.getElementById("status");
+    const errorDiv = document.getElementById("error-message");
+
+    let imageSrc = getImagePath();
+    let size = Number(sizeSelector.value);
     let pieces = [];
-    let activePiece = null;
+    let draggedIndex = null;
     let offsetX = 0;
     let offsetY = 0;
 
-    // ===== ИНИЦИАЛИЗАЦИЯ =====
-    const newGameBtn = document.getElementById('newGameBtn');
-    newGameBtn.addEventListener('click', startGame);
-
-    // Запустить игру при загрузке страницы
-    window.addEventListener('load', startGame);
-
-    // ===== ОСНОВНАЯ ФУНКЦИЯ - СТАРТ ИГРЫ =====
-    function startGame() {
-      // Очистить старые пазлы
-      pieces = [];
-      activePiece = null;
-      document.querySelectorAll('.piece').forEach(el => el.remove());
-
-      // Выбрать случайное изображение
-      const imageList = [];
-      for(let i = 1; i <= NUM_IMAGES; i++) {
-        imageList.push(`${IMAGES_FOLDER}${i}.jpg`);
-      }
-      const randomImage = imageList[Math.floor(Math.random() * imageList.length)];
-
-      // Загрузить изображение
-      const img = new Image();
-      img.src = randomImage;
-
-      img.onerror = () => {
-        console.error(`Ошибка загрузки: ${randomImage}`);
-        alert('Не найдено изображение. Убедитесь, что папка images/ заполнена картинками (1.jpg - 10.jpg)');
-      };
-
-      img.onload = () => {
-        createPuzzle(randomImage);
-      };
+    // Get image path from images folder
+    function getImagePath() {
+      return "images/" + levelSelector.value + ".png";
     }
 
-    // ===== СОЗДАНИЕ ПАЗЛА =====
-    function createPuzzle(imageSrc) {
-      const gameDiv = document.getElementById('game');
-      const gameSize = gameDiv.clientWidth;
-      const pieceSize = gameSize / GRID_SIZE;
+    // Change level (load different image)
+    levelSelector.addEventListener("change", () => {
+      imageSrc = getImagePath();
+      createPuzzle();
+      errorDiv.textContent = '';
+    });
 
-      // Установить фоновое изображение с блюром
-      const imageLayer = document.getElementById('imageLayer');
-      imageLayer.style.backgroundImage = `url('${imageSrc}')`;
-      imageLayer.style.filter = 'blur(18px)';
+    // Change grid size
+    sizeSelector.addEventListener("change", () => {
+      size = Number(sizeSelector.value);
+      createPuzzle();
+    });
 
-      // Создать все кусочки пазла
-      for(let row = 0; row < GRID_SIZE; row++) {
-        for(let col = 0; col < GRID_SIZE; col++) {
-          const piece = document.createElement('div');
-          piece.className = 'piece';
+    // Upload custom image
+    imageInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          imageSrc = evt.target.result;
+          createPuzzle();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
-          // Размер кусочка
-          piece.style.width = pieceSize + 'px';
-          piece.style.height = pieceSize + 'px';
+    // Shuffle button
+    shuffleButton.addEventListener("click", () => {
+      pieces = shuffleArray(pieces);
+      drawPuzzle();
+      statusDiv.textContent = '';
+    });
 
-          // Фоновое изображение кусочка
-          piece.style.backgroundImage = `url('${imageSrc}')`;
+    // New game button
+    newGameButton.addEventListener("click", createPuzzle);
 
-          // Позиция фона внутри кусочка (откуда брать часть большого изображения)
-          piece.style.backgroundPosition = 
-            `${-col * pieceSize}px ${-row * pieceSize}px`;
+    // Create puzzle
+    function createPuzzle() {
+      container.innerHTML = "";
+      statusDiv.textContent = '';
+      pieces = [];
 
-          // Сохранить правильную позицию для этого кусочка
-          const correctX = col * pieceSize;
-          const correctY = row * pieceSize;
-          piece.dataset.correctX = correctX;
-          piece.dataset.correctY = correctY;
-
-          // Установить случайную начальную позицию
-          piece.style.left = Math.random() * (gameSize - pieceSize) + 'px';
-          piece.style.top = Math.random() * (gameSize - pieceSize) + 'px';
-
-          // Подключить обработчики drag & drop
-          attachDragHandlers(piece);
-
-          // Добавить в контейнер и массив
-          gameDiv.appendChild(piece);
-          pieces.push(piece);
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          pieces.push({ x, y });
         }
       }
+
+      pieces = shuffleArray(pieces);
+      drawPuzzle();
     }
 
-    // ===== DRAG & DROP =====
-    function attachDragHandlers(piece) {
-      piece.addEventListener('pointerdown', (e) => {
-        activePiece = piece;
-        offsetX = e.offsetX;
-        offsetY = e.offsetY;
-        piece.setPointerCapture(e.pointerId);
+    // Draw puzzle on screen
+    function drawPuzzle() {
+      const containerSize = container.clientWidth;
+      const pieceSize = containerSize / size;
+      container.innerHTML = "";
+
+      pieces.forEach((piece, index) => {
+        const div = document.createElement("div");
+        div.className = "puzzle-piece";
+        
+        div.style.width = pieceSize + "px";
+        div.style.height = pieceSize + "px";
+        div.style.left = ((index % size) * pieceSize) + "px";
+        div.style.top = (Math.floor(index / size) * pieceSize) + "px";
+        
+        div.style.backgroundImage = "url('" + imageSrc + "')";
+        div.style.backgroundSize = containerSize + "px " + containerSize + "px";
+        div.style.backgroundPosition = 
+          (-piece.x * pieceSize) + "px " + (-piece.y * pieceSize) + "px";
+
+        div.dataset.index = index;
+
+        // Mouse and Touch events
+        div.addEventListener("mousedown", startDrag);
+        div.addEventListener("touchstart", startDrag, false);
+
+        container.appendChild(div);
       });
 
-      piece.addEventListener('pointermove', (e) => {
-        if(activePiece !== piece) return;
-
-        const gameDiv = document.getElementById('game');
-        const gameRect = gameDiv.getBoundingClientRect();
-        const pieceSize = piece.clientWidth;
-
-        let newX = e.clientX - gameRect.left - offsetX;
-        let newY = e.clientY - gameRect.top - offsetY;
-
-        // Ограничить движение пределами контейнера
-        newX = Math.max(0, Math.min(gameRect.width - pieceSize, newX));
-        newY = Math.max(0, Math.min(gameRect.height - pieceSize, newY));
-
-        piece.style.left = newX + 'px';
-        piece.style.top = newY + 'px';
-      });
-
-      piece.addEventListener('pointerup', () => {
-        activePiece = null;
-        snapToPlace(piece);
-        checkVictory();
-      });
+      document.addEventListener("mousemove", moveDrag, false);
+      document.addEventListener("touchmove", moveDrag, false);
+      document.addEventListener("mouseup", endDrag, false);
+      document.addEventListener("touchend", endDrag, false);
     }
 
-    // ===== АВТОМАТИЧЕСКОЕ ПРИЛИПАНИЕ =====
-    function snapToPlace(piece) {
-      const correctX = parseFloat(piece.dataset.correctX);
-      const correctY = parseFloat(piece.dataset.correctY);
-      const currentX = parseFloat(piece.style.left);
-      const currentY = parseFloat(piece.style.top);
+    // Start dragging
+    function startDrag(e) {
+      draggedIndex = Number(e.target.dataset.index);
+      const rect = e.target.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      offsetX = clientX - rect.left;
+      offsetY = clientY - rect.top;
+      
+      e.target.classList.add("dragging");
+    }
 
-      // Если близко к правильной позиции - прилипнуть
-      if(Math.abs(currentX - correctX) < SNAP_DISTANCE && 
-         Math.abs(currentY - correctY) < SNAP_DISTANCE) {
-        piece.style.left = correctX + 'px';
-        piece.style.top = correctY + 'px';
-        piece.style.pointerEvents = 'none'; // Отключить перетаскивание
+    // Move while dragging
+    function moveDrag(e) {
+      if (draggedIndex === null) return;
+
+      const piece = document.querySelector("[data-index='" + draggedIndex + "']");
+      if (!piece) return;
+
+      e.preventDefault();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      const containerRect = container.getBoundingClientRect();
+      let x = clientX - containerRect.left - offsetX;
+      let y = clientY - containerRect.top - offsetY;
+
+      x = Math.max(0, Math.min(x, containerRect.width - piece.offsetWidth));
+      y = Math.max(0, Math.min(y, containerRect.height - piece.offsetHeight));
+
+      piece.style.left = x + "px";
+      piece.style.top = y + "px";
+    }
+
+    // End dragging
+    function endDrag(e) {
+      if (draggedIndex === null) return;
+
+      const piece = document.querySelector("[data-index='" + draggedIndex + "']");
+      if (!piece) {
+        draggedIndex = null;
+        return;
       }
+
+      piece.classList.remove("dragging");
+
+      const containerSize = container.clientWidth;
+      const pieceSize = containerSize / size;
+      
+      const x = parseFloat(piece.style.left);
+      const y = parseFloat(piece.style.top);
+      
+      const newCol = Math.round(x / pieceSize);
+      const newRow = Math.round(y / pieceSize);
+      const newIndex = newRow * size + newCol;
+      
+      if (newIndex >= 0 && newIndex < pieces.length && newIndex !== draggedIndex) {
+        swapPieces(draggedIndex, newIndex);
+      } else {
+        drawPuzzle();
+      }
+      
+      draggedIndex = null;
+      checkVictory();
     }
 
-    // ===== ПРОВЕРКА ПОБЕДЫ =====
+    // Swap two pieces
+    function swapPieces(i, j) {
+      const temp = pieces[i];
+      pieces[i] = pieces[j];
+      pieces[j] = temp;
+      drawPuzzle();
+    }
+
+    // Shuffle array
+    function shuffleArray(array) {
+      const shuffled = array.slice();
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    // Check if puzzle is completed
     function checkVictory() {
-      // Проверить собраны ли все куски
-      const allSnapped = pieces.every(p => p.style.pointerEvents === 'none');
+      let isWin = true;
+      for (let i = 0; i < pieces.length; i++) {
+        const correctX = i % size;
+        const correctY = Math.floor(i / size);
+        if (pieces[i].x !== correctX || pieces[i].y !== correctY) {
+          isWin = false;
+          break;
+        }
+      }
 
-      if(allSnapped) {
-        // Убрать блюр
-        const imageLayer = document.getElementById('imageLayer');
-        imageLayer.style.filter = 'blur(0px)';
-
-        // Показать поздравление
+      if (isWin) {
+        statusDiv.textContent = "SUCCESS! Puzzle completed!";
         setTimeout(() => {
-          alert('🎉 Пазл собран! Вы победили!');
+          if (confirm("Great job! Try next level?")) {
+            const currentLevel = Number(levelSelector.value);
+            if (currentLevel < 10) {
+              levelSelector.value = (currentLevel + 1).toString();
+              imageSrc = getImagePath();
+              createPuzzle();
+              errorDiv.textContent = '';
+            } else {
+              statusDiv.textContent = "All levels completed!";
+            }
+          }
         }, 600);
       }
     }
+
+    // Handle window resize
+    window.addEventListener("resize", drawPuzzle);
+
+    // Initialize game
+    createPuzzle();
   </script>
 </body>
 </html>
