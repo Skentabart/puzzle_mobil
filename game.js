@@ -3,13 +3,13 @@ const label = document.getElementById("levelLabel");
 
 const GRID = 3;
 
-// список картинок (добавляешь файл → добавляешь сюда)
+// список файлов (PNG)
 const images = [
- "1.png",
- "2.png",
- "3.png",
- "4.png",
- "5.png"
+  "1.png",
+  "2.png",
+  "3.png",
+  "4.png",
+  "5.png"
 ];
 
 let level = 0;
@@ -18,131 +18,137 @@ let dragTile = null;
 
 function waitBoardReady(callback){
 
- function check(){
+  function check(){
+    if(board.offsetWidth > 0) callback();
+    else requestAnimationFrame(check);
+  }
 
-   if(board.offsetWidth > 0) callback();
-   else requestAnimationFrame(check);
-
- }
-
- check();
+  check();
 }
 
 function loadLevel(){
 
- waitBoardReady(()=>{
+  waitBoardReady(()=>{
 
-   board.innerHTML="";
-   tiles=[];
+    board.innerHTML="";
+    tiles=[];
 
-   const img="images/"+images[level];
+    const imgSrc = "images/" + images[level];
 
-   label.textContent=`Level ${level+1}/${images.length}`;
+    console.log("LOAD IMAGE:", imgSrc);
 
-   let order=[...Array(GRID*GRID).keys()];
-   order.sort(()=>Math.random()-0.5);
+    label.textContent=`Level ${level+1}/${images.length}`;
 
-   const size = board.offsetWidth / GRID;
+    let order=[...Array(GRID*GRID).keys()];
+    order.sort(()=>Math.random()-0.5);
 
-   for(let i=0;i<GRID*GRID;i++){
+    const size = board.offsetWidth / GRID;
 
-     const div=document.createElement("div");
+    for(let i=0;i<GRID*GRID;i++){
 
-     div.className="tile blur";
+      const tile=document.createElement("div");
+      tile.className="tile blur";
 
-     div.dataset.correct=i;
-     div.dataset.current=order[i];
+      tile.dataset.correct=i;
+      tile.dataset.current=order[i];
 
-     const cx=order[i]%GRID;
-     const cy=Math.floor(order[i]/GRID);
+      tile.style.width=size+"px";
+      tile.style.height=size+"px";
 
-     div.style.width=size+"px";
-     div.style.height=size+"px";
+      // создаём IMG вместо background
+      const img=document.createElement("img");
 
-     div.style.backgroundImage=`url(${img})`;
-     div.style.backgroundSize=`${GRID*100}% ${GRID*100}%`;
+      img.src = imgSrc;
+      img.draggable = false;
 
-     div.style.backgroundPosition=
-       `${(cx/(GRID-1))*100}% ${(cy/(GRID-1))*100}%`;
+      img.style.width = (GRID*100)+"%";
+      img.style.height = (GRID*100)+"%";
+      img.style.position="absolute";
 
-     setPosition(div,i,size);
+      const cx=order[i]%GRID;
+      const cy=Math.floor(order[i]/GRID);
 
-     enableDrag(div);
+      img.style.left = -(cx*size)+"px";
+      img.style.top = -(cy*size)+"px";
 
-     board.appendChild(div);
-     tiles.push(div);
-   }
+      tile.appendChild(img);
 
- });
+      setPosition(tile,i,size);
+
+      enableDrag(tile);
+
+      board.appendChild(tile);
+      tiles.push(tile);
+    }
+
+  });
 }
 
 function setPosition(tile,index,size){
 
- const x=index%GRID;
- const y=Math.floor(index/GRID);
+  const x=index%GRID;
+  const y=Math.floor(index/GRID);
 
- tile.style.transform=`translate(${x*size}px,${y*size}px)`;
+  tile.style.transform=`translate(${x*size}px,${y*size}px)`;
 }
 
 function enableDrag(tile){
 
- tile.onpointerdown=()=>dragTile=tile;
+  tile.onpointerdown=()=>dragTile=tile;
 
- tile.onpointerup=()=>{
+  tile.onpointerup=()=>{
 
-   if(!dragTile || dragTile===tile) return;
+    if(!dragTile || dragTile===tile) return;
 
-   swap(dragTile,tile);
-   dragTile=null;
-   checkWin();
- }
+    swap(dragTile,tile);
+    dragTile=null;
+    checkWin();
+  };
 }
 
 function swap(a,b){
 
- let temp=a.dataset.current;
- a.dataset.current=b.dataset.current;
- b.dataset.current=temp;
+  let temp=a.dataset.current;
+  a.dataset.current=b.dataset.current;
+  b.dataset.current=temp;
 
- updatePositions();
+  updatePositions();
 }
 
 function updatePositions(){
 
- const size = board.offsetWidth / GRID;
+  const size = board.offsetWidth / GRID;
 
- tiles.forEach(t=>{
-
-   setPosition(t,Number(t.dataset.current),size);
-
- });
+  tiles.forEach(t=>{
+    setPosition(t,Number(t.dataset.current),size);
+  });
 }
 
 function checkWin(){
 
- let win=true;
+  let win=true;
 
- tiles.forEach(t=>{
-   if(t.dataset.correct!==t.dataset.current) win=false;
- });
+  tiles.forEach(t=>{
+    if(t.dataset.correct!==t.dataset.current) win=false;
+  });
 
- if(win){
+  if(win){
 
-   tiles.forEach(t=>t.classList.remove("blur"));
+    tiles.forEach(t=>t.classList.remove("blur"));
 
-   setTimeout(()=>{
+    setTimeout(()=>{
 
-     level++;
+      level++;
 
-     if(level>=images.length){
-       alert("Все уровни пройдены!");
-       level=0;
-     }
+      if(level>=images.length){
+        alert("Игра завершена");
+        level=0;
+      }
 
-     loadLevel();
+      loadLevel();
 
-   },1000);
- }
+    },1000);
+  }
 }
 
 window.addEventListener("resize",updatePositions);
