@@ -35,7 +35,7 @@ function loadLevel(){
    board.innerHTML="";
    tiles=[];
 
-   const img="images/"+images[level];
+   const img="Images/"+images[level];
 
    label.textContent=`Level ${level+1}/${images.length}`;
 
