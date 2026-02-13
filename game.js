@@ -2,31 +2,47 @@ const board = document.getElementById("board");
 const label = document.getElementById("levelLabel");
 
 const GRID = 3;
-const MAX_LEVEL = 10;
 
-let level = Number(localStorage.getItem("puzzleLevel")) || 1;
-
+let images = [];
+let level = 0;
 let tiles = [];
 let dragTile = null;
 
-function shuffle(arr){
-    for(let i=arr.length-1;i>0;i--){
-        let j=Math.floor(Math.random()*(i+1));
-        [arr[i],arr[j]]=[arr[j],arr[i]];
-    }
+async function init(){
+
+    // загружаем список изображений
+    const res = await fetch("images/list.json");
+    images = await res.json();
+
+    loadLevel();
 }
 
-function loadLevel(){
+function waitBoardReady(){
+
+    return new Promise(resolve=>{
+
+        function check(){
+            if(board.offsetWidth>0) resolve();
+            else requestAnimationFrame(check);
+        }
+
+        check();
+    });
+}
+
+async function loadLevel(){
+
+    await waitBoardReady();
 
     board.innerHTML="";
     tiles=[];
 
-    label.textContent="Level "+level;
+    label.textContent=`Level ${level+1}/${images.length}`;
 
-    const img=`images/${level}.jpg`;
+    const img="images/"+images[level];
 
     let order=[...Array(GRID*GRID).keys()];
-    shuffle(order);
+    order.sort(()=>Math.random()-0.5);
 
     const size = board.offsetWidth / GRID;
 
@@ -35,6 +51,7 @@ function loadLevel(){
         const div=document.createElement("div");
 
         div.className="tile blur";
+
         div.dataset.correct=i;
         div.dataset.current=order[i];
 
@@ -50,16 +67,16 @@ function loadLevel(){
         div.style.backgroundPosition=
             `${(cx/(GRID-1))*100}% ${(cy/(GRID-1))*100}%`;
 
-        setPosition(div,i,size);
+        setPos(div,i,size);
 
-        enableTouch(div);
+        enableDrag(div);
 
         board.appendChild(div);
         tiles.push(div);
     }
 }
 
-function setPosition(tile,index,size){
+function setPos(tile,index,size){
 
     const x=index%GRID;
     const y=Math.floor(index/GRID);
@@ -67,20 +84,20 @@ function setPosition(tile,index,size){
     tile.style.transform=`translate(${x*size}px,${y*size}px)`;
 }
 
-function enableTouch(tile){
+function enableDrag(tile){
 
-    tile.addEventListener("pointerdown",e=>{
+    tile.onpointerdown=()=>{
         dragTile=tile;
-    });
+    };
 
-    tile.addEventListener("pointerup",e=>{
+    tile.onpointerup=()=>{
 
         if(!dragTile || dragTile===tile) return;
 
         swap(dragTile,tile);
         dragTile=null;
         checkWin();
-    });
+    };
 }
 
 function swap(a,b){
@@ -97,7 +114,7 @@ function updatePositions(){
     const size = board.offsetWidth / GRID;
 
     tiles.forEach(t=>{
-        setPosition(t,Number(t.dataset.current),size);
+        setPos(t,Number(t.dataset.current),size);
     });
 }
 
@@ -106,9 +123,7 @@ function checkWin(){
     let win=true;
 
     tiles.forEach(t=>{
-        if(t.dataset.correct!==t.dataset.current){
-            win=false;
-        }
+        if(t.dataset.correct!==t.dataset.current) win=false;
     });
 
     if(win){
@@ -118,18 +133,18 @@ function checkWin(){
         setTimeout(()=>{
 
             level++;
-            if(level>MAX_LEVEL){
-                alert("Игра пройдена!");
-                level=1;
+
+            if(level>=images.length){
+                alert("Все уровни пройдены!");
+                level=0;
             }
 
-            localStorage.setItem("puzzleLevel",level);
             loadLevel();
 
-        },1200);
+        },1000);
     }
 }
 
-window.addEventListener("resize",()=>updatePositions());
+window.addEventListener("resize",updatePositions);
 
-loadLevel();
+init();
