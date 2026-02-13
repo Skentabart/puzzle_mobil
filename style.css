@@ -1,0 +1,25 @@
+body{
+    margin:0;
+    font-family:Arial;
+    background:#111;
+    color:white;
+    text-align:center;
+}
+
+#board{
+    width:90vw;
+    height:90vw;
+    margin:auto;
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    gap:2px;
+}
+
+.tile{
+    background-size:300% 300%;
+    touch-action:none;
+}
+
+.blur{
+    filter: blur(6px);
+}
