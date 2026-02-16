@@ -165,7 +165,7 @@
 
     #final-image.show {
       opacity: 1;
-      transform: scale(1.15);
+      transform: scale(1.5);
     }
 
     #status {
@@ -379,10 +379,14 @@
       const jpgPath = "images/" + currentLevel + ".jpg";
       const pngPath = "images/" + currentLevel + ".png";
       
+      // Используем тестовое изображение по умолчанию
+      imageSrc = testImages[currentLevel - 1];
+      
       const img = new Image();
       
       img.onload = function() {
         imageSrc = jpgPath;
+        finalImage.style.backgroundImage = "url('" + imageSrc + "')";
         createPuzzle();
         errorDiv.textContent = '';
       };
@@ -391,11 +395,14 @@
         const imgPng = new Image();
         imgPng.onload = function() {
           imageSrc = pngPath;
+          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
           createPuzzle();
           errorDiv.textContent = '';
         };
         imgPng.onerror = function() {
+          // Используем тестовое изображение
           imageSrc = testImages[currentLevel - 1];
+          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
           createPuzzle();
           errorDiv.textContent = 'Using default image. Place images/1.jpg or images/1.png in your folder.';
         };
@@ -404,7 +411,6 @@
       
       img.src = jpgPath;
       
-      finalImage.style.backgroundImage = "url('" + imageSrc + "')";
       finalImage.classList.remove("show");
       
       isGameComplete = false;
@@ -642,6 +648,7 @@
       }
     });
 
+    // Load first level
     loadLevel(1);
   </script>
 </body>
