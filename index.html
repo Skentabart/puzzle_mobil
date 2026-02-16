@@ -107,7 +107,7 @@
 
     #blur-overlay.complete {
       filter: blur(0px) !important;
-      transform: scale(1.5);
+      transform: scale(1.15);
       z-index: 10;
     }
 
@@ -609,7 +609,7 @@
           }, index * 50);
         });
 
-        // Show full image without blur and scaled 1.5x
+        // Show full image without blur and scaled 1.15x
         const blurEl = document.getElementById("blur-overlay");
         if (blurEl) {
           blurEl.classList.add("complete");
