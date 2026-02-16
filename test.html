@@ -376,7 +376,7 @@
     let isGameComplete = false;
 
     function getImagePath(level) {
-      return "images/" + level + ".jpg";
+      return "images/" + level + ".png";
     }
 
     function loadLevel(level) {
@@ -402,7 +402,7 @@
       img.onerror = function() {
         imageSrc = testImages[currentLevel - 1];
         createPuzzle();
-        errorDiv.textContent = 'Using default image. Place images/1.jpg - images/10.jpg in your folder.';
+        errorDiv.textContent = 'Using default image. Place images/1.png - images/10.png in your folder.';
       };
       
       img.src = imagePath;
