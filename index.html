@@ -78,6 +78,26 @@
       min-width: 100px;
     }
 
+    .sound-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      color: white;
+    }
+
+    .sound-controls label {
+      margin: 0;
+      color: white;
+      font-size: 14px;
+    }
+
+    .sound-controls input[type="file"] {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
     #puzzle-container {
       position: relative;
       width: 90vw;
@@ -302,6 +322,14 @@
     <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/jpg" title="Upload custom image (JPG or PNG)">
   </div>
 
+  <div class="sound-controls">
+    <label>🔊 Move Sound:</label>
+    <input type="file" id="moveSound" accept="audio/*" title="Upload move sound">
+    
+    <label>🔊 Complete Sound:</label>
+    <input type="file" id="completeSound" accept="audio/*" title="Upload complete sound">
+  </div>
+
   <div id="error-message"></div>
 
   <div class="progress-bar">
@@ -321,7 +349,105 @@
   </div>
 
   <script>
-    // 10 основных изображений, одно для каждого уровня
+    // Создание звуков через Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let moveSoundUrl = null;
+    let completeSoundUrl = null;
+
+    // Звук для подстановки пазла (move) - по умолчанию
+    function playMoveSound() {
+      if (moveSoundUrl) {
+        playAudioFile(moveSoundUrl);
+      } else {
+        playDefaultMoveSound();
+      }
+    }
+
+    // Звук для полной сборки пазла (all) - по умолчанию
+    function playCompleteSound() {
+      if (completeSoundUrl) {
+        playAudioFile(completeSoundUrl);
+      } else {
+        playDefaultCompleteSound();
+      }
+    }
+
+    // Воспроизведение загруженного звукового файла
+    function playAudioFile(url) {
+      const audio = new Audio(url);
+      audio.volume = 0.5;
+      audio.play().catch(err => console.log('Audio play error:', err));
+    }
+
+    // Звук для подстановки пазла по умолчанию (синтезированный)
+    function playDefaultMoveSound() {
+      try {
+        const now = audioContext.currentTime;
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+        
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } catch(e) {
+        console.log('Audio context error:', e);
+      }
+    }
+
+    // Звук для полной сборки пазла по умолчанию (синтезированный)
+    function playDefaultCompleteSound() {
+      try {
+        const now = audioContext.currentTime;
+        
+        // Первый тон
+        const osc1 = audioContext.createOscillator();
+        const gain1 = audioContext.createGain();
+        osc1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        
+        osc1.frequency.setValueAtTime(523, now);
+        gain1.gain.setValueAtTime(0.3, now);
+        gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc1.start(now);
+        osc1.stop(now + 0.2);
+        
+        // Второй тон
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        
+        osc2.frequency.setValueAtTime(659, now + 0.15);
+        gain2.gain.setValueAtTime(0.3, now + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.35);
+        
+        // Третий тон
+        const osc3 = audioContext.createOscillator();
+        const gain3 = audioContext.createGain();
+        osc3.connect(gain3);
+        gain3.connect(audioContext.destination);
+        
+        osc3.frequency.setValueAtTime(784, now + 0.3);
+        gain3.gain.setValueAtTime(0.3, now + 0.3);
+        gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        osc3.start(now + 0.3);
+        osc3.stop(now + 0.6);
+      } catch(e) {
+        console.log('Audio context error:', e);
+      }
+    }
+
+    // 10 основных изображений
     const testImages = [
       'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 500 500%22%3E%3Cdefs%3E%3ClinearGradient id=%22g1%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%2322c55e;stop-opacity:1%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%230891b2;stop-opacity:1%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%22500%22 height=%22500%22 fill=%22url(%23g1)%22/%3E%3C/svg%3E',
       'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 500 500%22%3E%3Cdefs%3E%3ClinearGradient id=%22g2%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23ef4444;stop-opacity:1%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23eab308;stop-opacity:1%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%22500%22 height=%22500%22 fill=%22url(%23g2)%22/%3E%3C/svg%3E',
@@ -339,6 +465,8 @@
     const piecesWrapper = document.querySelector(".puzzle-pieces-wrapper");
     const finalImage = document.getElementById("final-image");
     const imageInput = document.getElementById("imageUpload");
+    const moveSoundInput = document.getElementById("moveSound");
+    const completeSoundInput = document.getElementById("completeSound");
     const shuffleButton = document.getElementById("shuffle");
     const newGameButton = document.getElementById("newGame");
     const nextLevelBtn = document.getElementById("nextLevelBtn");
@@ -351,25 +479,46 @@
 
     let currentLevel = 1;
     let imageSrc = testImages[0];
-    let size = 3; // Starts with 3x3
+    let size = 3;
     let pieces = [];
     let draggedIndex = null;
     let offsetX = 0;
     let offsetY = 0;
     let isGameComplete = false;
 
-    // Функция для расчета размера сетки на основе уровня
     function getGridSize(level) {
-      if (level >= 1 && level <= 10) return 3;  // Уровни 1-10: 3x3
-      if (level >= 11 && level <= 20) return 4; // Уровни 11-20: 4x4
-      if (level >= 21 && level <= 30) return 5; // Уровни 21-30: 5x5
-      return 6; // Выше 30: 6x6
+      if (level >= 1 && level <= 10) return 3;
+      if (level >= 11 && level <= 20) return 4;
+      if (level >= 21 && level <= 30) return 5;
+      return 6;
     }
 
-    // Функция для получения индекса изображения (циклируется через 10)
     function getImageIndex(level) {
       return ((level - 1) % 10);
     }
+
+    // Загрузка звуков
+    moveSoundInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          moveSoundUrl = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    completeSoundInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          completeSoundUrl = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
     function loadLevel(level) {
       if (level > 30) {
@@ -383,17 +532,14 @@
       currentLevel = level;
       currentLevelDisplay.textContent = currentLevel;
       
-      // Вычисляем размер сетки и индекс изображения
       size = getGridSize(level);
       const imageIndex = getImageIndex(level);
       
-      // Обновляем дисплей размера сетки
       gridDisplay.textContent = size + "x" + size;
       
       const jpgPath = "images/" + (imageIndex + 1) + ".jpg";
       const pngPath = "images/" + (imageIndex + 1) + ".png";
       
-      // Используем тестовое изображение по умолчанию
       imageSrc = testImages[imageIndex];
       
       const img = new Image();
@@ -414,7 +560,6 @@
           errorDiv.textContent = '';
         };
         imgPng.onerror = function() {
-          // Используем тестовое изображение
           imageSrc = testImages[imageIndex];
           finalImage.style.backgroundImage = "url('" + imageSrc + "')";
           createPuzzle();
@@ -573,6 +718,7 @@
       
       if (newIndex >= 0 && newIndex < pieces.length && newIndex !== draggedIndex) {
         swapPieces(draggedIndex, newIndex);
+        playMoveSound();
       } else {
         drawPuzzle();
       }
@@ -626,6 +772,7 @@
 
       if (isWin) {
         isGameComplete = true;
+        playCompleteSound();
         
         const puzzlePieces = document.querySelectorAll(".puzzle-piece");
         puzzlePieces.forEach((p, index) => {
@@ -634,7 +781,6 @@
           }, index * 50);
         });
 
-        // Show final sharp image zoomed
         setTimeout(() => {
           finalImage.classList.add("show");
         }, 400);
@@ -655,7 +801,6 @@
       }
     });
 
-    // Load first level
     loadLevel(1);
   </script>
 </body>
