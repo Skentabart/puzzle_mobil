@@ -165,7 +165,7 @@
 
     #final-image.show {
       opacity: 1;
-      transform: scale(1.5);
+      transform: scale(1.1);
     }
 
     #status {
@@ -290,18 +290,10 @@
   <h1>🧩 Puzzle Game</h1>
   
   <div class="level-display">
-    Level: <span id="currentLevel">1</span> / 10
+    Level: <span id="currentLevel">1</span> | Grid: <span id="gridDisplay">3x3</span>
   </div>
 
   <div class="controls">
-    <label for="size">Grid Size:</label>
-    <select id="size">
-      <option value="2">2 x 2</option>
-      <option value="3" selected>3 x 3</option>
-      <option value="4">4 x 4</option>
-      <option value="5">5 x 5</option>
-    </select>
-
     <button id="shuffle">Shuffle</button>
     <button id="newGame">Restart</button>
 
@@ -329,6 +321,70 @@
   </div>
 
   <script>
+    // Создание звуков через Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Звук для подстановки пазла (move)
+    function playMoveSound() {
+      const now = audioContext.currentTime;
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+      
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+      
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      
+      osc.start(now);
+      osc.stop(now + 0.1);
+    }
+
+    // Звук для полной сборки пазла (all)
+    function playCompleteSound() {
+      const now = audioContext.currentTime;
+      
+      // Первый тон
+      const osc1 = audioContext.createOscillator();
+      const gain1 = audioContext.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioContext.destination);
+      
+      osc1.frequency.setValueAtTime(523, now);
+      gain1.gain.setValueAtTime(0.3, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc1.start(now);
+      osc1.stop(now + 0.2);
+      
+      // Второй тон
+      const osc2 = audioContext.createOscillator();
+      const gain2 = audioContext.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioContext.destination);
+      
+      osc2.frequency.setValueAtTime(659, now + 0.15);
+      gain2.gain.setValueAtTime(0.3, now + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc2.start(now + 0.15);
+      osc2.stop(now + 0.35);
+      
+      // Третий тон
+      const osc3 = audioContext.createOscillator();
+      const gain3 = audioContext.createGain();
+      osc3.connect(gain3);
+      gain3.connect(audioContext.destination);
+      
+      osc3.frequency.setValueAtTime(784, now + 0.3);
+      gain3.gain.setValueAtTime(0.3, now + 0.3);
+      gain3.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc3.start(now + 0.3);
+      osc3.stop(now + 0.6);
+    }
+
+    // 10 основных изображений
     const testImages = [
       'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 500 500%22%3E%3Cdefs%3E%3ClinearGradient id=%22g1%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%2322c55e;stop-opacity:1%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%230891b2;stop-opacity:1%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%22500%22 height=%22500%22 fill=%22url(%23g1)%22/%3E%3C/svg%3E',
       'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 500 500%22%3E%3Cdefs%3E%3ClinearGradient id=%22g2%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23ef4444;stop-opacity:1%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%23eab308;stop-opacity:1%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%22500%22 height=%22500%22 fill=%22url(%23g2)%22/%3E%3C/svg%3E',
@@ -345,7 +401,6 @@
     const container = document.getElementById("puzzle-container");
     const piecesWrapper = document.querySelector(".puzzle-pieces-wrapper");
     const finalImage = document.getElementById("final-image");
-    const sizeSelector = document.getElementById("size");
     const imageInput = document.getElementById("imageUpload");
     const shuffleButton = document.getElementById("shuffle");
     const newGameButton = document.getElementById("newGame");
@@ -354,33 +409,50 @@
     const completionMessage = document.getElementById("completionMessage");
     const errorDiv = document.getElementById("error-message");
     const currentLevelDisplay = document.getElementById("currentLevel");
+    const gridDisplay = document.getElementById("gridDisplay");
     const progressFill = document.getElementById("progressFill");
 
     let currentLevel = 1;
     let imageSrc = testImages[0];
-    let size = Number(sizeSelector.value);
+    let size = 3;
     let pieces = [];
     let draggedIndex = null;
     let offsetX = 0;
     let offsetY = 0;
     let isGameComplete = false;
 
+    function getGridSize(level) {
+      if (level >= 1 && level <= 10) return 3;
+      if (level >= 11 && level <= 20) return 4;
+      if (level >= 21 && level <= 30) return 5;
+      return 6;
+    }
+
+    function getImageIndex(level) {
+      return ((level - 1) % 10);
+    }
+
     function loadLevel(level) {
-      if (level > 10) {
+      if (level > 30) {
         statusDiv.textContent = "All levels completed!";
-        completionMessage.textContent = "Congratulations! You finished all 10 levels!";
+        completionMessage.textContent = "Congratulations! You finished all 30 levels!";
         completionMessage.classList.add("show");
         nextLevelBtn.classList.remove("show");
         return;
       }
+
       currentLevel = level;
       currentLevelDisplay.textContent = currentLevel;
       
-      const jpgPath = "images/" + currentLevel + ".jpg";
-      const pngPath = "images/" + currentLevel + ".png";
+      size = getGridSize(level);
+      const imageIndex = getImageIndex(level);
       
-      // Используем тестовое изображение по умолчанию
-      imageSrc = testImages[currentLevel - 1];
+      gridDisplay.textContent = size + "x" + size;
+      
+      const jpgPath = "images/" + (imageIndex + 1) + ".jpg";
+      const pngPath = "images/" + (imageIndex + 1) + ".png";
+      
+      imageSrc = testImages[imageIndex];
       
       const img = new Image();
       
@@ -400,11 +472,10 @@
           errorDiv.textContent = '';
         };
         imgPng.onerror = function() {
-          // Используем тестовое изображение
-          imageSrc = testImages[currentLevel - 1];
+          imageSrc = testImages[imageIndex];
           finalImage.style.backgroundImage = "url('" + imageSrc + "')";
           createPuzzle();
-          errorDiv.textContent = 'Using default image. Place images/1.jpg or images/1.png in your folder.';
+          errorDiv.textContent = 'Using default image. Place images/1.jpg to images/10.jpg in your folder.';
         };
         imgPng.src = pngPath;
       };
@@ -418,13 +489,6 @@
       statusDiv.textContent = '';
       completionMessage.classList.remove("show");
     }
-
-    sizeSelector.addEventListener("change", () => {
-      if (!isGameComplete) {
-        size = Number(sizeSelector.value);
-        createPuzzle();
-      }
-    });
 
     imageInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -566,6 +630,7 @@
       
       if (newIndex >= 0 && newIndex < pieces.length && newIndex !== draggedIndex) {
         swapPieces(draggedIndex, newIndex);
+        playMoveSound(); // Звук при подстановке пазла
       } else {
         drawPuzzle();
       }
@@ -619,6 +684,7 @@
 
       if (isWin) {
         isGameComplete = true;
+        playCompleteSound(); // Звук при полной сборке пазла
         
         const puzzlePieces = document.querySelectorAll(".puzzle-piece");
         puzzlePieces.forEach((p, index) => {
@@ -627,7 +693,6 @@
           }, index * 50);
         });
 
-        // Show final sharp image zoomed
         setTimeout(() => {
           finalImage.classList.add("show");
         }, 400);
@@ -648,7 +713,6 @@
       }
     });
 
-    // Load first level
     loadLevel(1);
   </script>
 </body>
