@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -343,7 +342,7 @@
       }
     }
 
-    // Звук для полной сборк�� пазла (all)
+    // Звук для полной сборки пазла (all)
     function playCompleteSound() {
       try {
         const now = audioContext.currentTime;
@@ -423,69 +422,59 @@
     let offsetY = 0;
     let isGameComplete = false;
 
+    // Функция для расчета размера сетки на основе уровня
     function getGridSize(level) {
       if (level >= 1 && level <= 10) return 3;
       if (level >= 11 && level <= 20) return 4;
       if (level >= 21 && level <= 30) return 5;
-      return 6;
+      if (level >= 31 && level <= 40) return 6;
+      return 7; // Для уровней выше 40
     }
 
-    function getImageIndex(level) {
-      return ((level - 1) % 10);
-    }
-
-    function loadLevel(level) {
-      if (level > 30) {
-        statusDiv.textContent = "All levels completed!";
-        completionMessage.textContent = "Congratulations! You finished all 30 levels!";
-        completionMessage.classList.add("show");
-        nextLevelBtn.classList.remove("show");
-        return;
+    // Функция для получения изображения с проверкой разных расширений
+    async function getImagePath(levelNumber) {
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      
+      for (let ext of extensions) {
+        const path = `images/${levelNumber}.${ext}`;
+        try {
+          const response = await fetch(path, { method: 'HEAD' });
+          if (response.ok) {
+            return path;
+          }
+        } catch (e) {
+          // Продолжаем попытку со следующим расширением
+        }
       }
+      
+      return null; // Если файл не найден
+    }
 
+    async function loadLevel(level) {
       currentLevel = level;
       currentLevelDisplay.textContent = currentLevel;
       
       size = getGridSize(level);
-      const imageIndex = getImageIndex(level);
-      
       gridDisplay.textContent = size + "x" + size;
       
-      const jpgPath = "images/" + (imageIndex + 1) + ".jpg";
-      const pngPath = "images/" + (imageIndex + 1) + ".png";
+      // Получаем путь к изображению
+      const imagePath = await getImagePath(level);
       
-      imageSrc = testImages[imageIndex];
-      
-      const img = new Image();
-      
-      img.onload = function() {
-        imageSrc = jpgPath;
+      if (imagePath) {
+        imageSrc = imagePath;
         finalImage.style.backgroundImage = "url('" + imageSrc + "')";
         createPuzzle();
         errorDiv.textContent = '';
-      };
-      
-      img.onerror = function() {
-        const imgPng = new Image();
-        imgPng.onload = function() {
-          imageSrc = pngPath;
-          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
-          createPuzzle();
-          errorDiv.textContent = '';
-        };
-        imgPng.onerror = function() {
-          imageSrc = testImages[imageIndex];
-          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
-          createPuzzle();
-          errorDiv.textContent = 'Using default image. Place images/1.jpg to images/10.jpg in your folder.';
-        };
-        imgPng.src = pngPath;
-      };
-      
-      img.src = jpgPath;
+      } else {
+        // Используем тестовое изображение
+        const testImageIndex = ((level - 1) % testImages.length);
+        imageSrc = testImages[testImageIndex];
+        finalImage.style.backgroundImage = "url('" + imageSrc + "')";
+        createPuzzle();
+        errorDiv.textContent = `No image found for level ${level}. Using default image.`;
+      }
       
       finalImage.classList.remove("show");
-      
       isGameComplete = false;
       nextLevelBtn.classList.remove("show");
       statusDiv.textContent = '';
@@ -697,6 +686,7 @@
       }
     });
 
+    // Загружаем первый уровень
     loadLevel(1);
   </script>
 </body>
