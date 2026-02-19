@@ -52,7 +52,7 @@
       font-size: 16px;
     }
 
-    button, select, input[type="file"] {
+    button, select {
       padding: 10px 16px;
       border-radius: 6px;
       font-size: 14px;
@@ -76,26 +76,6 @@
 
     select {
       min-width: 100px;
-    }
-
-    .sound-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: center;
-      color: white;
-    }
-
-    .sound-controls label {
-      margin: 0;
-      color: white;
-      font-size: 14px;
-    }
-
-    .sound-controls input[type="file"] {
-      padding: 6px 12px;
-      font-size: 12px;
     }
 
     #puzzle-container {
@@ -315,19 +295,6 @@
 
   <div class="controls">
     <button id="shuffle">Shuffle</button>
-    <button id="newGame">Restart</button>
-
-    <span style="color: white; font-weight: bold;">or</span>
-
-    <input type="file" id="imageUpload" accept="image/jpeg,image/png,image/jpg" title="Upload custom image (JPG or PNG)">
-  </div>
-
-  <div class="sound-controls">
-    <label>🔊 Move Sound:</label>
-    <input type="file" id="moveSound" accept="audio/*" title="Upload move sound">
-    
-    <label>🔊 Complete Sound:</label>
-    <input type="file" id="completeSound" accept="audio/*" title="Upload complete sound">
   </div>
 
   <div id="error-message"></div>
@@ -351,36 +318,9 @@
   <script>
     // Создание звуков через Web Audio API
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let moveSoundUrl = null;
-    let completeSoundUrl = null;
 
-    // Звук для подстановки пазла (move) - по умолчанию
+    // Звук для подстановки пазла (move)
     function playMoveSound() {
-      if (moveSoundUrl) {
-        playAudioFile(moveSoundUrl);
-      } else {
-        playDefaultMoveSound();
-      }
-    }
-
-    // Звук для полной сборки пазла (all) - по умолчанию
-    function playCompleteSound() {
-      if (completeSoundUrl) {
-        playAudioFile(completeSoundUrl);
-      } else {
-        playDefaultCompleteSound();
-      }
-    }
-
-    // Воспроизведение загруженного звукового файла
-    function playAudioFile(url) {
-      const audio = new Audio(url);
-      audio.volume = 0.5;
-      audio.play().catch(err => console.log('Audio play error:', err));
-    }
-
-    // Звук для подстановки пазла по умолчанию (синтезированный)
-    function playDefaultMoveSound() {
       try {
         const now = audioContext.currentTime;
         const osc = audioContext.createOscillator();
@@ -398,12 +338,12 @@
         osc.start(now);
         osc.stop(now + 0.1);
       } catch(e) {
-        console.log('Audio context error:', e);
+        console.log('Audio error:', e);
       }
     }
 
-    // Звук для полной сборки пазла по умолчанию (синтезированный)
-    function playDefaultCompleteSound() {
+    // Звук для полной сборки пазла (all)
+    function playCompleteSound() {
       try {
         const now = audioContext.currentTime;
         
@@ -443,7 +383,7 @@
         osc3.start(now + 0.3);
         osc3.stop(now + 0.6);
       } catch(e) {
-        console.log('Audio context error:', e);
+        console.log('Audio error:', e);
       }
     }
 
@@ -464,11 +404,7 @@
     const container = document.getElementById("puzzle-container");
     const piecesWrapper = document.querySelector(".puzzle-pieces-wrapper");
     const finalImage = document.getElementById("final-image");
-    const imageInput = document.getElementById("imageUpload");
-    const moveSoundInput = document.getElementById("moveSound");
-    const completeSoundInput = document.getElementById("completeSound");
     const shuffleButton = document.getElementById("shuffle");
-    const newGameButton = document.getElementById("newGame");
     const nextLevelBtn = document.getElementById("nextLevelBtn");
     const statusDiv = document.getElementById("status");
     const completionMessage = document.getElementById("completionMessage");
@@ -486,111 +422,64 @@
     let offsetY = 0;
     let isGameComplete = false;
 
+    // Функция для расчета размера сетки на основе уровня
     function getGridSize(level) {
       if (level >= 1 && level <= 10) return 3;
       if (level >= 11 && level <= 20) return 4;
       if (level >= 21 && level <= 30) return 5;
-      return 6;
+      if (level >= 31 && level <= 40) return 6;
+      return 7; // Для уровней выше 40
     }
 
-    function getImageIndex(level) {
-      return ((level - 1) % 10);
+    // Функция для получения изображения с проверкой разных расширений
+    async function getImagePath(levelNumber) {
+      const extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      
+      for (let ext of extensions) {
+        const path = `images/${levelNumber}.${ext}`;
+        try {
+          const response = await fetch(path, { method: 'HEAD' });
+          if (response.ok) {
+            return path;
+          }
+        } catch (e) {
+          // Продолжаем попытку со следующим расширением
+        }
+      }
+      
+      return null; // Если файл не найден
     }
 
-    // Загрузка звуков
-    moveSoundInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          moveSoundUrl = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    completeSoundInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          completeSoundUrl = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    function loadLevel(level) {
-      if (level > 30) {
-        statusDiv.textContent = "All levels completed!";
-        completionMessage.textContent = "Congratulations! You finished all 30 levels!";
-        completionMessage.classList.add("show");
-        nextLevelBtn.classList.remove("show");
-        return;
-      }
-
+    async function loadLevel(level) {
       currentLevel = level;
       currentLevelDisplay.textContent = currentLevel;
       
       size = getGridSize(level);
-      const imageIndex = getImageIndex(level);
-      
       gridDisplay.textContent = size + "x" + size;
       
-      const jpgPath = "images/" + (imageIndex + 1) + ".jpg";
-      const pngPath = "images/" + (imageIndex + 1) + ".png";
+      // Получаем путь к изображению
+      const imagePath = await getImagePath(level);
       
-      imageSrc = testImages[imageIndex];
-      
-      const img = new Image();
-      
-      img.onload = function() {
-        imageSrc = jpgPath;
+      if (imagePath) {
+        imageSrc = imagePath;
         finalImage.style.backgroundImage = "url('" + imageSrc + "')";
         createPuzzle();
         errorDiv.textContent = '';
-      };
-      
-      img.onerror = function() {
-        const imgPng = new Image();
-        imgPng.onload = function() {
-          imageSrc = pngPath;
-          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
-          createPuzzle();
-          errorDiv.textContent = '';
-        };
-        imgPng.onerror = function() {
-          imageSrc = testImages[imageIndex];
-          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
-          createPuzzle();
-          errorDiv.textContent = 'Using default image. Place images/1.jpg to images/10.jpg in your folder.';
-        };
-        imgPng.src = pngPath;
-      };
-      
-      img.src = jpgPath;
+      } else {
+        // Используем тестовое изображение
+        const testImageIndex = ((level - 1) % testImages.length);
+        imageSrc = testImages[testImageIndex];
+        finalImage.style.backgroundImage = "url('" + imageSrc + "')";
+        createPuzzle();
+        errorDiv.textContent = `No image found for level ${level}. Using default image.`;
+      }
       
       finalImage.classList.remove("show");
-      
       isGameComplete = false;
       nextLevelBtn.classList.remove("show");
       statusDiv.textContent = '';
       completionMessage.classList.remove("show");
     }
-
-    imageInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          imageSrc = evt.target.result;
-          finalImage.style.backgroundImage = "url('" + imageSrc + "')";
-          createPuzzle();
-          errorDiv.textContent = '';
-        };
-        reader.readAsDataURL(file);
-      }
-    });
 
     shuffleButton.addEventListener("click", () => {
       if (!isGameComplete) {
@@ -598,10 +487,6 @@
         drawPuzzle();
         statusDiv.textContent = '';
       }
-    });
-
-    newGameButton.addEventListener("click", () => {
-      createPuzzle();
     });
 
     nextLevelBtn.addEventListener("click", () => {
@@ -801,6 +686,7 @@
       }
     });
 
+    // Загружаем первый уровень
     loadLevel(1);
   </script>
 </body>
