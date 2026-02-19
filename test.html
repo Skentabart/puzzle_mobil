@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -295,7 +296,6 @@
 
   <div class="controls">
     <button id="shuffle">Shuffle</button>
-    <button id="newGame">Restart</button>
   </div>
 
   <div id="error-message"></div>
@@ -343,7 +343,7 @@
       }
     }
 
-    // Звук для полной сборки пазла (all)
+    // Звук для полной сборк�� пазла (all)
     function playCompleteSound() {
       try {
         const now = audioContext.currentTime;
@@ -406,7 +406,6 @@
     const piecesWrapper = document.querySelector(".puzzle-pieces-wrapper");
     const finalImage = document.getElementById("final-image");
     const shuffleButton = document.getElementById("shuffle");
-    const newGameButton = document.getElementById("newGame");
     const nextLevelBtn = document.getElementById("nextLevelBtn");
     const statusDiv = document.getElementById("status");
     const completionMessage = document.getElementById("completionMessage");
@@ -499,10 +498,6 @@
         drawPuzzle();
         statusDiv.textContent = '';
       }
-    });
-
-    newGameButton.addEventListener("click", () => {
-      createPuzzle();
     });
 
     nextLevelBtn.addEventListener("click", () => {
